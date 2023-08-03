@@ -1,6 +1,5 @@
 const app = require("express")();
 const axios = require("axios");
-require("dotenv").config();
 
 let chrome = {};
 let puppeteer;
@@ -12,8 +11,16 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
   puppeteer = require("puppeteer");
 }
 
-async function generatePdf(url, bookingId) {
+app.get("/api", async (req, res) => {
   let options = {};
+
+  if (!req.query.bookingId) {
+    throw "Need bookingId parameter";
+  }
+
+  if (!req.query.url) {
+    throw "Need query parameter";
+  }
 
   if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     options = {
@@ -25,7 +32,6 @@ async function generatePdf(url, bookingId) {
     };
   }
 
-  console.log("Generating PDF");
   try {
     let browser = await puppeteer.launch(options);
     let page = await browser.newPage();
@@ -33,36 +39,13 @@ async function generatePdf(url, bookingId) {
       waitUntil: "networkidle0",
     });
     const buffer = await page.pdf({ format: "a4" });
-
-    console.log("Generating PDF Success");
-    // await axios.post(`${process.env.S3_UPLOADER_SERVER}/api`, {
-    //   bookingId,
-    //   buffer,
-    // });
-
-    const pageTitle = await page.title();
-
-    // return `https://gadjah-ticketing-platform.s3.ap-southeast-1.amazonaws.com/${bookingId}.pdf`;
-    return pageTitle;
-  } catch (e) {
-    throw e;
-  }
-}
-
-app.get("/api", async (req, res) => {
-  try {
-    if (!req.query.bookingId) {
-      throw "Need bookingId parameter";
-    }
-
-    if (!req.query.url) {
-      throw "Need query parameter";
-    }
-
-    const result = await generatePdf(req.query.url, req.query.bookingId);
-
     console.log("PDF Saved");
-    res.send({ message: "PDF Generated", s3Url: result }).status(200);
+    res
+      .send({
+        message: "PDF Generated",
+        s3Url: `https://gadjah-ticketing-platform.s3.ap-southeast-1.amazonaws.com/${req.query.bookingId}.pdf`,
+      })
+      .status(200);
   } catch (err) {
     console.log(err);
     res.send({ message: "Request Failed", error: err });
@@ -70,7 +53,7 @@ app.get("/api", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 5002, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log("Server started");
 });
 
