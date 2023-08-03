@@ -12,10 +12,7 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
   puppeteer = require("puppeteer");
 }
 
-let browser;
-let page;
-
-async function init() {
+async function generatePdf(url, bookingId) {
   let options = {};
 
   if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
@@ -28,21 +25,13 @@ async function init() {
     };
   }
 
-  try {
-    browser = await puppeteer.launch(options);
-  } catch (e) {
-    throw e;
-  }
-}
-
-async function generatePdf(url, bookingId) {
   console.log("Generating PDF");
   try {
-    page = await browser.newPage();
+    let browser = await puppeteer.launch(options);
+    let page = await browser.newPage();
     await page.goto(url, {
       waitUntil: "networkidle0",
     });
-
     const buffer = await page.pdf({ format: "a4" });
 
     console.log("Generating PDF Success");
@@ -82,7 +71,6 @@ app.get("/api", async (req, res) => {
 });
 
 app.listen(process.env.PORT || 5002, () => {
-  init();
   console.log("Server started");
 });
 
