@@ -38,7 +38,10 @@ async function generatePdf(url, bookingId) {
       buffer,
     });
 
-    return `https://gadjah-ticketing-platform.s3.ap-southeast-1.amazonaws.com/${bookingId}.pdf`;
+    const pageTitle = await page.title();
+
+    // return `https://gadjah-ticketing-platform.s3.ap-southeast-1.amazonaws.com/${bookingId}.pdf`;
+    return pageTitle;
   } catch (e) {
     throw e;
   }
