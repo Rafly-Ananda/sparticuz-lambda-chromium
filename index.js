@@ -1,22 +1,35 @@
 const app = require("express")();
+const axios = require("axios");
 require("dotenv").config();
 
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
-const axios = require("axios");
+let chrome = {};
+let puppeteer;
+
+if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+  chrome = require("chrome-aws-lambda");
+  puppeteer = require("puppeteer-core");
+} else {
+  puppeteer = require("puppeteer");
+}
 
 let browser;
 let page;
 
 async function init() {
-  try {
-    browser = await puppeteer.launch({
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+  let options = {};
+
+  if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+    options = {
+      args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
+      defaultViewport: chrome.defaultViewport,
+      executablePath: await chrome.executablePath,
+      headless: true,
       ignoreHTTPSErrors: true,
-      defaultViewport: chromium.defaultViewport,
-      args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-    });
+    };
+  }
+
+  try {
+    browser = await puppeteer.launch(options);
   } catch (e) {
     throw e;
   }
@@ -33,10 +46,10 @@ async function generatePdf(url, bookingId) {
     const buffer = await page.pdf({ format: "a4" });
 
     console.log("Generating PDF Success");
-    await axios.post(`${process.env.S3_UPLOADER_SERVER}/api`, {
-      bookingId,
-      buffer,
-    });
+    // await axios.post(`${process.env.S3_UPLOADER_SERVER}/api`, {
+    //   bookingId,
+    //   buffer,
+    // });
 
     const pageTitle = await page.title();
 
