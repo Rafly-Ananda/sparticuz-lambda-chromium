@@ -9,6 +9,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "^16"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.383.0",
     "@sparticuz/chromium": "^109.0.5",
