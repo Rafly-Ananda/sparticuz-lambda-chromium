@@ -3,11 +3,10 @@ require("dotenv").config();
 
 const puppeteer = require("puppeteer-core");
 const chromium = require("@sparticuz/chromium");
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { uploadPdfToS3 } = require("./s3Uploader");
 
 let browser;
 let page;
-let s3Client;
 
 async function init() {
   try {
@@ -18,29 +17,6 @@ async function init() {
       defaultViewport: chromium.defaultViewport,
       args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
     });
-
-    s3Client = new S3Client({
-      region: process.env.AWS_BUCKET_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
-  } catch (e) {
-    throw e;
-  }
-}
-
-async function uploadPdfToS3(key, buffer) {
-  console.log("Uploading PDfPDF");
-  try {
-    const s3Params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `${key}.pdf`,
-      Body: buffer,
-      ContentType: "application/pdf",
-    };
-    return await s3Client.send(new PutObjectCommand(s3Params));
   } catch (e) {
     throw e;
   }
