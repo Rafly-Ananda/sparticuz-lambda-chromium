@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const puppeteer = require("puppeteer-core");
 const chromium = require("@sparticuz/chromium");
-const axios = require("axios");
+const { uploadPdfToS3 } = require("./s3Uploader");
 
 let browser;
 let page;
@@ -31,20 +31,16 @@ async function generatePdf(url, bookingId) {
     });
 
     const buffer = await page.pdf({ format: "a4" });
-
     console.log("Generating PDF Success");
-    await axios.post(`${process.env.S3_UPLOADER_SERVER}/api`, {
-      bookingId,
-      buffer,
-    });
-
+    await uploadPdfToS3(bookingId, buffer);
+    console.log("Uploading PDF Success");
     return `https://gadjah-ticketing-platform.s3.ap-southeast-1.amazonaws.com/${bookingId}.pdf`;
   } catch (e) {
     throw e;
   }
 }
 
-app.get("/api", async (req, res) => {
+app.get("/api/", async (req, res) => {
   try {
     if (!req.query.bookingId) {
       throw "Need bookingId parameter";
@@ -56,16 +52,14 @@ app.get("/api", async (req, res) => {
 
     const result = await generatePdf(req.query.url, req.query.bookingId);
 
-    console.log("PDF Saved");
     res.send({ message: "PDF Generated", s3Url: result }).status(200);
   } catch (err) {
-    console.log(err);
     res.send({ message: "Request Failed", error: err });
     return null;
   }
 });
 
-app.listen(process.env.PORT || 5002, () => {
+app.listen(process.env.PORT || 5001, () => {
   init();
   console.log("Server started");
 });
